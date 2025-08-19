@@ -1,0 +1,8 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
+<suite name="Dashboard Performance Suite" verbose="1" parallel="false">
+  <test name="Dashboard Performance">
+    <classes>
+      <class name="com.perfkit.DashboardPerformanceTest"/>
+    </classes>
+  </test>
+</suite>
