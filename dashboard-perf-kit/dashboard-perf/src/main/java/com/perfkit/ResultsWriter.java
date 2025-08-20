@@ -21,7 +21,7 @@ public class ResultsWriter {
         boolean newFile = !Files.exists(Paths.get(csvPath));
         try (PrintWriter out = new PrintWriter(new FileWriter(csvPath, true))) {
             if (newFile) {
-                out.println("Date,BuildId,Environment,Dashboard_load_timeMs ,FCPms,LCPms,Notes");
+                out.println("Date,BuildId,Environment,DashboardLoadTimeMs ,FCPms,LCPms,Iteration");
             }
             out.printf("%s,%s,%s,%s,%s,%s,%s%n",
                         date,

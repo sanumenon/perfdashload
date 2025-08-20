@@ -66,7 +66,7 @@ public class PerfChartGenerator {
                 .build();
 
         currentChart.addSeries("Metrics",
-                Arrays.asList("LoadTimeMs", "FCPms", "LCPms"),
+                Arrays.asList("DashboardLoadTimeMs", "FCPms", "LCPms"),
                 Arrays.asList(latestLoad, latestFCP, latestLCP));
 
         BitmapEncoder.saveBitmap(currentChart, CURRENT_CHART, BitmapEncoder.BitmapFormat.PNG);
@@ -124,7 +124,7 @@ public class PerfChartGenerator {
                 .xAxisTitle("Week Index").yAxisTitle("Milliseconds")
                 .build();
 
-        weeklyChart.addSeries("LoadTimeMs", xIndexes, weeklyLoadAvg).setMarker(SeriesMarkers.CIRCLE);
+        weeklyChart.addSeries("DashboardLoadTimeMs", xIndexes, weeklyLoadAvg).setMarker(SeriesMarkers.CIRCLE);
         weeklyChart.addSeries("FCPms", xIndexes, weeklyFCPAvg).setMarker(SeriesMarkers.DIAMOND);
         weeklyChart.addSeries("LCPms", xIndexes, weeklyLCPAvg).setMarker(SeriesMarkers.SQUARE);
 

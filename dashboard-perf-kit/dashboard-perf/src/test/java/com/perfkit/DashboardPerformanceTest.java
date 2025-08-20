@@ -135,7 +135,7 @@ public class DashboardPerformanceTest extends BaseTest {
         ResultsWriter writer = new ResultsWriter(csvPath);
         LocalDateTime timenow = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        writer.append(timenow.format(formatter),buildId,environment,String.valueOf(loadTimeMs),fcpMs, lcpMs,"targetSelector=" + targetSelector);
+        writer.append(timenow.format(formatter),buildId,environment,String.valueOf(loadTimeMs),fcpMs, lcpMs,String.valueOf(counter));
 
         Assert.assertTrue(loadTimeMs >= 0, "Measured load time should be non-negative");
         test.log(Status.INFO, "Test completed successfully. Refer csv file for detailed results: ");
