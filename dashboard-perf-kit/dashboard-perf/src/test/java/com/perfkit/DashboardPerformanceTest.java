@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -132,7 +133,9 @@ public class DashboardPerformanceTest extends BaseTest {
 
         // ✅ Write results to CSV (now includes LCP)
         ResultsWriter writer = new ResultsWriter(csvPath);
-        writer.append(environment,String.valueOf(loadTimeMs),fcpMs, lcpMs,"targetSelector=" + targetSelector);
+        LocalDateTime timenow = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        writer.append(timenow.format(formatter),buildId,environment,String.valueOf(loadTimeMs),fcpMs, lcpMs,"targetSelector=" + targetSelector);
 
         Assert.assertTrue(loadTimeMs >= 0, "Measured load time should be non-negative");
         test.log(Status.INFO, "Test completed successfully. Refer csv file for detailed results: ");
@@ -143,4 +146,8 @@ public class DashboardPerformanceTest extends BaseTest {
 }
 
 
+//To run the program with PROD environment, you can use the following command:
 /*How to run the program : (Desktop/jpphelper/dashboard-perf-kit/dashboard-perf$ )Current folder from Terminal $> mvn clean test -Denvironment=PROD -DbaseUrl="https://my.charitableimpact.com" -Dusername="testchimppro@charitableimpact.com" -Dpassword="EWQdsa1983#a" -DtargetSelector="#cimpactAccount-Owner > div.fresnel-container.fresnel-greaterThanOrEqual-xl > div.homePageWrapper > div > div > div > div > div > div.userHomeRight > div:nth-child(5) > div > div > div:nth-child(1) > div > div.impactAccountsFooter > div.link > i.sc-jXbUNg.jwKnWE.icon.icon-arrow-right.undefined" -DperfThresholdMs=10000 -DbuildId=$(date +%Y%m%d%H%M%S) -Dsurefire.suiteXmlFiles=testng.xml */
+
+//To run the program with STAGE (my1) environment, you can use the following command:
+//mvn clean test -Denvironment=STAGE -DbaseUrl="https://my1.stg.charitableimpact.com" -Dusername="bal.ganesh001@gmail.com" -Dpassword="Test123#" -DtargetSelector="#cimpactAccount-Owner > div.fresnel-container.fresnel-greaterThanOrEqual-xl > div.homePageWrapper > div > div > div > div > div > div.userHomeRight > div:nth-child(4) > div > div > div:nth-child(1) > div > div.impactAccountsFooter > div.link > i" -DperfThresholdMs=10000 -DbuildId=$(date +%Y%m%d%H%M%S) -Dsurefire.suiteXmlFiles=testng.xml 

@@ -52,11 +52,11 @@ public class BaseTest {
     @BeforeMethod //BeforeClass
     public void setUp() throws Exception {
         envUrlMap.put("QA", "https://my.qa.charitableimpact.com/users/login");
-        envUrlMap.put("STAGE", "https://my.stg.charitableimpact.com/users/login");
+        envUrlMap.put("STAGE", "https://my1.stg.charitableimpact.com/users/login");
         envUrlMap.put("PROD", "https://my.charitableimpact.com/users/login");
 
-        environment = System.getProperty("environment", "PROD").toUpperCase();
-        baseUrl = System.getProperty("baseUrl", envUrlMap.getOrDefault(environment, "https://my.stg.charitableimpact.com/users/login"));
+        environment = System.getProperty("environment", "STAGE").toUpperCase();
+        baseUrl = System.getProperty("baseUrl", envUrlMap.getOrDefault(environment, "https://my1.stg.charitableimpact.com/users/login"));
         username = System.getProperty("username", "YOUR_USERNAME");
         password = System.getProperty("password", "YOUR_PASSWORD");
         // username = System.getProperty("username", "testchimppro@charitableimpact.com");

@@ -2,10 +2,16 @@ package com.perfkit;
 
 import org.knowm.xchart.*;
 import org.knowm.xchart.style.markers.SeriesMarkers;
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
 import com.opencsv.CSVReader;
+
+import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.WeekFields;
+import java.util.*;
 
 public class PerfChartGenerator {
 
@@ -14,6 +20,12 @@ public class PerfChartGenerator {
     private static final String WEEKLY_CHART = "../results/weekly_status.png";
 
     public static void main(String[] args) throws Exception {
+
+        if (!Files.exists(Paths.get(CSV_PATH))) {
+            System.out.println("CSV file not found: " + CSV_PATH);
+            return;
+        }
+
         List<String[]> rows;
         try (CSVReader reader = new CSVReader(new FileReader(CSV_PATH))) {
             rows = reader.readAll();
@@ -27,22 +39,22 @@ public class PerfChartGenerator {
         // Remove header
         rows.remove(0);
 
-        List<String> envs = new ArrayList<>();
+        List<String> dates = new ArrayList<>();
+        List<String> buildIds = new ArrayList<>();
         List<Double> loadTimes = new ArrayList<>();
         List<Double> fcpTimes = new ArrayList<>();
         List<Double> lcpTimes = new ArrayList<>();
 
         for (String[] row : rows) {
-            envs.add(row[0]); // Environment
-            loadTimes.add(row[1].isEmpty() ? 0 : Double.parseDouble(row[1]));
-            fcpTimes.add(row[2].isEmpty() ? 0 : Double.parseDouble(row[2]));
-            lcpTimes.add(row[3].isEmpty() ? 0 : Double.parseDouble(row[3]));
-            // row[4] = Notes → ignore (contains CSS selector)
+            dates.add(row[0]);      // Date
+            buildIds.add(row[1]);   // BuildId
+            loadTimes.add(row[3].isEmpty() ? 0 : Double.parseDouble(row[3]));
+            fcpTimes.add(row[4].isEmpty() ? 0 : Double.parseDouble(row[4]));
+            lcpTimes.add(row[5].isEmpty() ? 0 : Double.parseDouble(row[5]));
         }
-        
 
         // --- Current Execution (latest build only) ---
-        String latestBuild = envs.get(envs.size() - 1);
+        String latestBuild = buildIds.get(buildIds.size() - 1);
         double latestLoad = loadTimes.get(loadTimes.size() - 1);
         double latestFCP = fcpTimes.get(fcpTimes.size() - 1);
         double latestLCP = lcpTimes.get(lcpTimes.size() - 1);
@@ -59,31 +71,65 @@ public class PerfChartGenerator {
 
         BitmapEncoder.saveBitmap(currentChart, CURRENT_CHART, BitmapEncoder.BitmapFormat.PNG);
 
-        // --- Weekly Status (last 7 builds) ---
-        int startIdx = Math.max(0, envs.size() - 7);
-        List<String> lastBuilds = envs.subList(startIdx, envs.size());
-        List<Double> lastLoads = loadTimes.subList(startIdx, loadTimes.size());
-        List<Double> lastFCP = fcpTimes.subList(startIdx, fcpTimes.size());
-        List<Double> lastLCP = lcpTimes.subList(startIdx, lcpTimes.size());
+        // --- Weekly Aggregation ---
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        
+        WeekFields weekFields = WeekFields.ISO;
 
-        // Create numeric X values (1..N) instead of using strings
+        class Metrics {
+            double loadSum = 0, fcpSum = 0, lcpSum = 0;
+            int count = 0;
+        }
+
+        // Map<WeekKey, Metrics>
+        Map<String, Metrics> weeklyMetrics = new LinkedHashMap<>();
+
+        for (int i = 0; i < rows.size(); i++) {
+            LocalDateTime dateTime = LocalDateTime.parse(dates.get(i), formatter);
+            LocalDate d = dateTime.toLocalDate();
+            int weekNum = d.get(weekFields.weekOfWeekBasedYear());
+            String weekKey = d.getYear() + "-W" + weekNum;
+
+            weeklyMetrics.putIfAbsent(weekKey, new Metrics());
+            Metrics m = weeklyMetrics.get(weekKey);
+            m.loadSum += loadTimes.get(i);
+            m.fcpSum += fcpTimes.get(i);
+            m.lcpSum += lcpTimes.get(i);
+            m.count++;
+        }
+
+        // Limit to last 7 weeks
+        List<String> weekKeys = new ArrayList<>(weeklyMetrics.keySet());
+        if (weekKeys.size() > 7) {
+            weekKeys = weekKeys.subList(weekKeys.size() - 7, weekKeys.size());
+        }
+
         List<Integer> xIndexes = new ArrayList<>();
-        for (int i = 0; i < lastBuilds.size(); i++) {
-            xIndexes.add(i + 1);
+        List<Double> weeklyLoadAvg = new ArrayList<>();
+        List<Double> weeklyFCPAvg = new ArrayList<>();
+        List<Double> weeklyLCPAvg = new ArrayList<>();
+
+        int idx = 1;
+        for (String wk : weekKeys) {
+            Metrics m = weeklyMetrics.get(wk);
+            xIndexes.add(idx++);
+            weeklyLoadAvg.add(m.loadSum / m.count);
+            weeklyFCPAvg.add(m.fcpSum / m.count);
+            weeklyLCPAvg.add(m.lcpSum / m.count);
         }
 
         XYChart weeklyChart = new XYChartBuilder()
-        .width(900).height(600)
-        .title("Weekly Performance Trend")
-        .xAxisTitle("Build Index (see legend for labels)").yAxisTitle("Milliseconds")
-        .build();
+                .width(900).height(600)
+                .title("Weekly Performance Trend")
+                .xAxisTitle("Week Index").yAxisTitle("Milliseconds")
+                .build();
 
-        weeklyChart.addSeries("LoadTimeMs", xIndexes, lastLoads).setMarker(SeriesMarkers.CIRCLE);
-        weeklyChart.addSeries("FCPms", xIndexes, lastFCP).setMarker(SeriesMarkers.DIAMOND);
-        weeklyChart.addSeries("LCPms", xIndexes, lastLCP).setMarker(SeriesMarkers.SQUARE);
+        weeklyChart.addSeries("LoadTimeMs", xIndexes, weeklyLoadAvg).setMarker(SeriesMarkers.CIRCLE);
+        weeklyChart.addSeries("FCPms", xIndexes, weeklyFCPAvg).setMarker(SeriesMarkers.DIAMOND);
+        weeklyChart.addSeries("LCPms", xIndexes, weeklyLCPAvg).setMarker(SeriesMarkers.SQUARE);
 
-        // Append build names in the title for quick reference
-        weeklyChart.setTitle("Weekly Performance Trend (Builds: " + String.join(", ", lastBuilds) + ")");
+        // Add week labels in the chart title for clarity
+        weeklyChart.setTitle("Weekly Performance Trend (Weeks: " + String.join(", ", weekKeys) + ")");
 
         BitmapEncoder.saveBitmap(weeklyChart, WEEKLY_CHART, BitmapEncoder.BitmapFormat.PNG);
         System.out.println("Charts generated: " + CURRENT_CHART + ", " + WEEKLY_CHART);

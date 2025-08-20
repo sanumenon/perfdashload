@@ -13,7 +13,7 @@ public class ResultsWriter {
         this.csvPath = csvPath;
     }
 
-    public void append(String environment,
+    public void append(String date,String buildId,String environment,
                        String loadTimeMs,
                        Long fcpMs,
                        Long lcpMs,
@@ -21,9 +21,11 @@ public class ResultsWriter {
         boolean newFile = !Files.exists(Paths.get(csvPath));
         try (PrintWriter out = new PrintWriter(new FileWriter(csvPath, true))) {
             if (newFile) {
-                out.println("Environment,LoadTimeMs,FCPms,LCPms,Notes");
+                out.println("Date,BuildId,Environment,Dashboard_load_timeMs ,FCPms,LCPms,Notes");
             }
-            out.printf("%s,%s,%s,%s,%s%n",
+            out.printf("%s,%s,%s,%s,%s,%s,%s%n",
+                        date,
+                        buildId,
                         environment,
                         loadTimeMs,
                         fcpMs != null ? fcpMs.toString() : "",
